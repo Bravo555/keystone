@@ -1,7 +1,7 @@
 const { gen, sampleOne } = require('testcheck');
 const { Text, Relationship } = require('@keystonejs/fields');
 const { multiAdapterRunners, setupServer, graphqlRequest } = require('@keystonejs/test-utils');
-const { getItem } = require('@keystonejs/server-side-graphql-client');
+const { createItem, getItem } = require('@keystonejs/server-side-graphql-client');
 
 const alphanumGenerator = gen.alphaNumString.notEmpty();
 
@@ -51,14 +51,16 @@ multiAdapterRunners().map(({ runner, adapterName }) =>
           const createGroup = await create('Group', { name: groupName });
 
           // Create an item to update
-          const createEvent = await create('Event', {
-            title: 'A thing',
-            group: createGroup.id,
+          const createEvent = await createItem({
+            keystone,
+            listKey: 'Event',
+            item: { title: 'A thing', group: { connect: { id: createGroup.id } } },
+            returnFields: `id group { id }`,
           });
 
           // Avoid false-positives by checking the database directly
           expect(createEvent).toHaveProperty('group');
-          expect(createEvent.group.toString()).toBe(createGroup.id);
+          expect(createEvent.group.id.toString()).toBe(createGroup.id);
 
           // Update the item and link the relationship field
           const { data, errors } = await graphqlRequest({
@@ -223,13 +225,18 @@ multiAdapterRunners().map(({ runner, adapterName }) =>
             const createGroup = await create('GroupNoRead', { name: groupName });
 
             // Create an item to update
-            const createEvent = await create('EventToGroupNoRead', {
-              group: createGroup.id,
+            const createEvent = await createItem({
+              keystone,
+              listKey: 'EventToGroupNoRead',
+              item: {
+                group: { connect: { id: createGroup.id } },
+              },
+              returnFields: 'id group { id }',
             });
 
             // Avoid false-positives by checking the database directly
             expect(createEvent).toHaveProperty('group');
-            expect(createEvent.group.toString()).toBe(createGroup.id);
+            expect(createEvent.group.id.toString()).toBe(createGroup.id);
 
             // Update the item and link the relationship field
             const { errors } = await keystone.executeGraphQL({

@@ -329,18 +329,13 @@ multiAdapterRunners().map(({ runner, adapterName }) =>
                 }
               `,
                 });
-
+                expect(errors).toBe(undefined);
                 expect(data).toMatchObject({
                   [`updateEventTo${group.name}`]: {
                     id: expect.any(String),
-                    group: {
-                      id: expect.any(String),
-                      name: groupName,
-                    },
+                    group: { id: expect.any(String), name: groupName },
                   },
                 });
-                expect(errors).toBe(undefined);
-
                 // See that it actually stored the group ID on the Event record
                 const event = await getItem({
                   keystone,
@@ -349,6 +344,7 @@ multiAdapterRunners().map(({ runner, adapterName }) =>
                   returnFields: 'id group { id name }',
                 });
                 expect(event).toBeTruthy();
+                expect(event.id).toBeTruthy();
                 expect(event.group).toBeTruthy();
                 expect(event.group.name).toBe(groupName);
               })
